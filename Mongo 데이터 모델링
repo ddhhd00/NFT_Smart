@@ -1,0 +1,172 @@
+{
+    "noteId": 1,
+    "issuer": "0x1234567890abcdef1234567890abcdef12345678",
+    "amount": 1000,
+    "dueDate": 1700000000,
+    "isPaid": false,
+    "issuerInfo": "Issuer Anonymous Info",
+    "receiverInfo": "Receiver Anonymous Info"
+}
+
+
+const { MongoClient } = require("mongodb");
+
+async function createNote(note) {
+    const uri = "mongodb://localhost:27017"; // MongoDB 서버의 URI
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+    try {
+        await client.connect(); // MongoDB에 연결
+        const database = client.db("digitalNotes"); // 데이터베이스 선택
+        const collection = database.collection("notes"); // 컬렉션 선택
+
+        // 어음 문서를 MongoDB에 삽입
+        const result = await collection.insertOne(note);
+        console.log(`Note created with ID: ${result.insertedId}`);
+    } catch (error) {
+        console.error("Error creating note:", error);
+    } finally {
+        await client.close(); // 연결 종료
+    }
+}
+
+// 예시 데이터 (어음 생성)
+const newNote = {
+    noteId: 1,
+    issuer: "0x1234567890abcdef1234567890abcdef12345678",
+    amount: 1000,
+    dueDate: 1700000000,
+    isPaid: false,
+    issuerInfo: "Issuer Anonymous Info",
+    receiverInfo: "Receiver Anonymous Info",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    ipfsUri: "ipfs://example_uri"
+};
+
+// 어음 생성 함수 호출
+createNote(newNote);
+
+const { MongoClient } = require("mongodb");
+
+async function getNoteById(noteId) {
+    const uri = "mongodb://localhost:27017"; // MongoDB 서버의 URI
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+    try {
+        await client.connect(); // MongoDB에 연결
+        const database = client.db("digitalNotes"); // 데이터베이스 선택
+        const collection = database.collection("notes"); // 컬렉션 선택
+
+        // noteId로 어음 찾기
+        const note = await collection.findOne({ noteId: noteId });
+
+        if (note) {
+            console.log("Note found:", note);
+        } else {
+            console.log("Note not found");
+        }
+    } catch (error) {
+        console.error("Error retrieving note:", error);
+    } finally {
+        await client.close(); // 연결 종료
+    }
+}
+
+// 예시: noteId가 1인 어음 조회
+getNoteById(1);
+
+const { MongoClient } = require("mongodb");
+
+async function getNotesByDueDate(dueDate) {
+    const uri = "mongodb://localhost:27017"; // MongoDB 서버의 URI
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+    try {
+        await client.connect(); // MongoDB에 연결
+        const database = client.db("digitalNotes"); // 데이터베이스 선택
+        const collection = database.collection("notes"); // 컬렉션 선택
+
+        // dueDate가 가까운 어음들 찾기
+        const notes = await collection.find({ dueDate: { $lt: dueDate } }).toArray();
+
+        if (notes.length > 0) {
+            console.log("Notes found:", notes);
+        } else {
+            console.log("No notes found near due date");
+        }
+    } catch (error) {
+        console.error("Error retrieving notes:", error);
+    } finally {
+        await client.close(); // 연결 종료
+    }
+}
+
+// 예시: 만기일이 1700000000 이전인 어음들을 조회
+getNotesByDueDate(1700000000);
+
+
+const { MongoClient } = require("mongodb");
+
+async function markAsPaid(noteId) {
+    const uri = "mongodb://localhost:27017"; // MongoDB 서버의 URI
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+    try {
+        await client.connect(); // MongoDB에 연결
+        const database = client.db("digitalNotes"); // 데이터베이스 선택
+        const collection = database.collection("notes"); // 컬렉션 선택
+
+        // 어음 지불 상태 변경 (isPaid를 true로 설정)
+        const result = await collection.updateOne(
+            { noteId: noteId },
+            { $set: { isPaid: true, updatedAt: new Date() } }
+        );
+
+        if (result.matchedCount > 0) {
+            console.log(`Note with ID ${noteId} has been marked as paid.`);
+        } else {
+            console.log("Note not found or already paid.");
+        }
+    } catch (error) {
+        console.error("Error marking note as paid:", error);
+    } finally {
+        await client.close(); // 연결 종료
+    }
+}
+
+// 예시: noteId가 1인 어음을 지불 완료로 표시
+markAsPaid(1);
+
+
+const { MongoClient } = require("mongodb");
+
+async function createIndexes() {
+    const uri = "mongodb://localhost:27017"; // MongoDB 서버의 URI
+    const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true });
+
+    try {
+        await client.connect(); // MongoDB에 연결
+        const database = client.db("digitalNotes"); // 데이터베이스 선택
+        const collection = database.collection("notes"); // 컬렉션 선택
+
+        // noteId와 dueDate에 인덱스 생성
+        await collection.createIndex({ noteId: 1 });
+        await collection.createIndex({ dueDate: 1 });
+
+        console.log("Indexes created.");
+    } catch (error) {
+        console.error("Error creating indexes:", error);
+    } finally {
+        await client.close(); // 연결 종료
+    }
+}
+
+// 인덱스 생성 호출
+createIndexes();
+
+# MongoDB 백업
+mongodump --uri="mongodb://localhost:27017" --out="/path/to/backup"
+
+# MongoDB 복원
+mongorestore --uri="mongodb://localhost:27017" /path/to/backup
