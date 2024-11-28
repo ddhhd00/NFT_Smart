@@ -1,0 +1,85 @@
+Solidity Smart Contract (NFT 기반 전자 어음)
+
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.0;
+
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+
+contract NFTNote is ERC721URIStorage, Ownable {
+    uint256 public tokenCounter;
+
+    // 전자 어음 정보를 담을 구조체
+    struct Note {
+        uint256 noteId;        // 어음 ID
+        address issuer;        // 발행자 주소
+        uint256 amount;        // 어음 금액
+        uint256 dueDate;       // 만기일 (타임스탬프)
+        bool isPaid;           // 지불 여부
+        string issuerInfo;     // 발행자 정보 (익명)
+        string receiverInfo;   // 수령자 정보 (익명)
+    }
+
+    // 어음 ID를 기준으로 어음 데이터를 저장
+    mapping(uint256 => Note) public notes;
+
+    // 어음 발행 이벤트
+    event NoteCreated(uint256 indexed noteId, address indexed issuer, uint256 amount, uint256 dueDate, string issuerInfo, string receiverInfo);
+    
+    // 어음 지불 이벤트
+    event NotePaid(uint256 indexed noteId);
+
+    constructor() ERC721("NFTNote", "NFTN") {
+        tokenCounter = 0;
+    }
+
+    // 새로운 전자 어음 발행 함수
+    function createNote(
+        uint256 amount,
+        uint256 dueDate,
+        string memory issuerInfo,
+        string memory receiverInfo
+    ) public returns (uint256) {
+        uint256 noteId = tokenCounter;
+        _safeMint(msg.sender, noteId);
+        _setTokenURI(noteId, "ipfs://example_uri"); // IPFS URI로 메타데이터 설정
+
+        // 전자 어음 정보를 기록
+        notes[noteId] = Note({
+            noteId: noteId,
+            issuer: msg.sender,
+            amount: amount,
+            dueDate: dueDate,
+            isPaid: false,
+            issuerInfo: issuerInfo,
+            receiverInfo: receiverInfo
+        });
+
+        tokenCounter++;
+
+        emit NoteCreated(noteId, msg.sender, amount, dueDate, issuerInfo, receiverInfo);
+        return noteId;
+    }
+
+    // 전자 어음 지불 함수
+    function markAsPaid(uint256 noteId) public onlyOwner {
+        require(notes[noteId].issuer != address(0), "Note does not exist");
+        require(!notes[noteId].isPaid, "Note already paid");
+
+        notes[noteId].isPaid = true;
+        emit NotePaid(noteId);
+    }
+
+    // 어음 정보를 조회하는 함수
+    function getNote(uint256 noteId) public view returns (Note memory) {
+        return notes[noteId];
+    }
+
+    // 외부에서 호출할 수 있도록 어음의 상태를 변경하는 함수
+    function updateNoteData(uint256 noteId, string memory issuerInfo, string memory receiverInfo) public onlyOwner {
+        require(notes[noteId].issuer != address(0), "Note does not exist");
+        
+        notes[noteId].issuerInfo = issuerInfo;
+        notes[noteId].receiverInfo = receiverInfo;
+    }
+}
